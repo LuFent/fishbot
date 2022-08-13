@@ -90,7 +90,8 @@ def product(bot, update, moltin_api_key):
             break
     else:
         product_quantity, product_price = 0, 0
-    message = f'🐟{product["name"]}\n\n💰{product["price"][0]["amount"]/100}$ per kg\n\n💵{product_quantity} kg in cart for {product_price/100} $ \n\n🤓{product["description"]}'
+    message = f'🐟{product["name"]}\n\n💰{product["price"][0]["amount"]/100}$ per kg\n\n💵{product_quantity} kg' \
+              f' in cart for {product_price/100} $ \n\n🤓{product["description"]}'
     image_file = get_image(moltin_api_key, product)
     product_keyboard = build_product_keyboard(moltin_api_key, product_id)
 
@@ -108,7 +109,8 @@ def cart(bot, update, moltin_api_key):
     cart_keyboard = []
     message = "🧺Ваша корзина:\n\n"
     for product in cart["data"]:
-        message += f'🐟{product["name"]}\n{product["unit_price"]["amount"]/100}$ per kg\n{product["quantity"]} kg in cart for {product["value"]["amount"]/100}$\n\n'
+        message += f'🐟{product["name"]}\n{product["unit_price"]["amount"]/100}$ per kg\n{product["quantity"]} kg ' \
+                   f'in cart for {product["value"]["amount"]/100}$\n\n'
         cart_sum += product["value"]["amount"]
         cart_keyboard.append(
             [
@@ -166,7 +168,8 @@ def remove_from_cart(bot, update, moltin_api_key):
     cart_keyboard = []
     message = "🧺Ваша корзина:\n\n"
     for product in cart["data"]:
-        message += f'🐟{product["name"]}\n{product["unit_price"]["amount"] / 100}$ per kg\n{product["quantity"]} kg in cart for {product["value"]["amount"] / 100}$\n\n'
+        message += f'🐟{product["name"]}\n{product["unit_price"]["amount"] / 100}$ per kg\n{product["quantity"]} kg in ' \
+                   f'cart for {product["value"]["amount"] / 100}$\n\n'
         cart_sum += product["value"]["amount"]
         cart_keyboard.append(
             [
@@ -239,7 +242,6 @@ def main():
 
     load_dotenv()
 
-    MOLTIN_API_TOKEN = "c4c20558034df8fa16d04820a92718b9e22e9eb7"
     TG_API_TOKEN = os.environ.get("TG_API")
 
     REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
