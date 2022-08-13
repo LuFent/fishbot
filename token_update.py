@@ -21,8 +21,12 @@ data = {
     "grant_type": "implicit",
 }
 
-token = requests.post("https://api.moltin.com/oauth/access_token", data=data).json()[
-    "access_token"
-]
 
-redis_db.set("MOLTIN_API_TOKEN", token)
+while True:
+    token = requests.post("https://api.moltin.com/oauth/access_token", data=data).json()[
+        "access_token"
+    ]
+
+    redis_db.set("MOLTIN_API_TOKEN", token)
+
+    sleep(3540)
