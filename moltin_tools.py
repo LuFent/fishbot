@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+from pathlib import Path
 
 
 def get_products(api_key):
@@ -55,6 +56,7 @@ def put_in_cart(api_key, cart_id, product_id, quantity=1):
 
 def get_image(api_key, product):
     file_name = f'{product["name"]}.png'
+    Path('Images').mkdir(exist_ok=True)
     if file_name in os.listdir("Images"):
         return os.path.join("Images", file_name)
 
