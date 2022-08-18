@@ -23,9 +23,9 @@ data = {
 
 
 while True:
-    token = requests.post("https://api.moltin.com/oauth/access_token", data=data).json()[
-        "access_token"
-    ]
+    token = requests.post(
+        "https://api.moltin.com/oauth/access_token", data=data
+    ).json()["access_token"]
 
     redis_db.set("MOLTIN_API_TOKEN", token)
 

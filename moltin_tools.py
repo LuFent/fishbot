@@ -60,7 +60,7 @@ def put_in_cart(api_key, cart_id, product_id, quantity=1):
 
 def get_image(api_key, product):
     file_name = f'{product["name"]}.png'
-    Path('Images').mkdir(exist_ok=True)
+    Path("Images").mkdir(exist_ok=True)
     if file_name in os.listdir("Images"):
         return os.path.join("Images", file_name)
 
@@ -155,4 +155,3 @@ def cart_checkout(api_key, cart_id, customer_id, first_name, last_name):
     url = f"https://api.moltin.com/v2/carts/{cart_id}/checkout"
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
-
