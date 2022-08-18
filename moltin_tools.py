@@ -9,8 +9,9 @@ def get_products(api_key):
     headers = {
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(url, headers=headers).json()
-    return response["data"]
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()["data"]
 
 
 def get_product(api_key, product_id):
@@ -20,8 +21,9 @@ def get_product(api_key, product_id):
         "Authorization": f"Bearer {api_key}",
     }
 
-    response = requests.get(url, headers=headers).json()
-    return response
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
 
 def get_cart_products(api_key, cart_id):
@@ -31,8 +33,9 @@ def get_cart_products(api_key, cart_id):
 
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items"
 
-    response = requests.get(url, headers=headers).json()
-    return response
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
 
 def put_in_cart(api_key, cart_id, product_id, quantity=1):
@@ -50,8 +53,9 @@ def put_in_cart(api_key, cart_id, product_id, quantity=1):
         },
     }
 
-    response = requests.post(url, headers=headers, json=json_data).json()
-    return response
+    response = requests.post(url, headers=headers, json=json_data)
+    response.raise_for_status()
+    return response.json()
 
 
 def get_image(api_key, product):
@@ -65,8 +69,12 @@ def get_image(api_key, product):
     }
 
     image_url = f'https://api.moltin.com/v2/files/{product["relationships"]["main_image"]["data"]["id"]}'
-    image_url = requests.get(image_url, headers=headers).json()["data"]["link"]["href"]
-    image = requests.get(image_url).content
+    image_url = requests.get(image_url, headers=headers)
+    image_url.raise_for_status()
+    image_url = image_url.json()["data"]["link"]["href"]
+    image = requests.get(image_url)
+    image.raise_for_status()
+    image = image.content
     with open(os.path.join("Images", file_name), "wb") as image_file:
         image_file.write(image)
         return os.path.join("Images", file_name)
@@ -77,10 +85,11 @@ def remove_cart_item(api_key, cart_id, cart_item_id):
         "Authorization": f"Bearer {api_key}",
     }
 
-    requests.delete(
+    response = requests.delete(
         f"https://api.moltin.com/v2/carts/{cart_id}/items/{cart_item_id}",
         headers=headers,
     )
+    response.raise_for_status()
 
 
 def clear_cart(api_key, cart_id):
@@ -89,7 +98,8 @@ def clear_cart(api_key, cart_id):
     }
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items"
 
-    requests.delete(url, headers=headers)
+    response = requests.delete(url, headers=headers)
+    response.raise_for_status()
 
 
 def create_customer(api_key, tg_name, email):
@@ -107,8 +117,9 @@ def create_customer(api_key, tg_name, email):
 
     response = requests.post(
         "https://api.moltin.com/v2/customers", headers=headers, json=json_data
-    ).json()
-    return response["data"]["id"]
+    )
+    response.raise_for_status()
+    return response.json()["data"]["id"]
 
 
 def cart_checkout(api_key, cart_id, customer_id, first_name, last_name):
@@ -142,4 +153,6 @@ def cart_checkout(api_key, cart_id, customer_id, first_name, last_name):
     }
 
     url = f"https://api.moltin.com/v2/carts/{cart_id}/checkout"
-    response = requests.post(url, headers=headers, json=json_data).json()
+    response = requests.post(url, headers=headers, json=json_data)
+    response.raise_for_status()
+
