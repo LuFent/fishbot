@@ -54,7 +54,9 @@ def build_product_keyboard(moltin_api_key, product_id):
     return product_keyboard
 
 
-def start(bot, update, moltin_api_key):
+def start(bot, update, redis_db):
+
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
 
     products_keyboard = build_products_menu_keyboard(moltin_api_key)
     update.message.reply_text(
@@ -64,23 +66,25 @@ def start(bot, update, moltin_api_key):
     return "MAIN_MENU"
 
 
-def main_menu(bot, update, moltin_api_key):
+def main_menu(bot, update, redis_db):
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
     query = update.callback_query
     user_id = query.from_user.id
-    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
 
     products_keyboard = build_products_menu_keyboard(moltin_api_key)
     message = "Привет, я бот для продажи рыбы!\nВыберете продукт"
 
     bot.send_message(user_id, text=message, reply_markup=products_keyboard)
+    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
     return "MAIN_MENU"
 
 
-def product(bot, update, moltin_api_key):
+def product(bot, update, redis_db):
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
     query = update.callback_query
     product_id = query["data"]
     user_id = query.from_user.id
-    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
+
     product = get_product(moltin_api_key, product_id)["data"]
     cart = get_cart_products(moltin_api_key, user_id)
     for cart_product in cart["data"]:
@@ -98,10 +102,12 @@ def product(bot, update, moltin_api_key):
     bot.send_photo(
         user_id, open(image_file, "rb"), caption=message, reply_markup=product_keyboard
     )
+    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
     return "PRODUCT"
 
 
-def cart(bot, update, moltin_api_key):
+def cart(bot, update, redis_db):
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
     query = update.callback_query
     user_id = query.from_user.id
     cart = get_cart_products(moltin_api_key, user_id)
@@ -128,7 +134,6 @@ def cart(bot, update, moltin_api_key):
         [telegram.InlineKeyboardButton("Оплата", callback_data="Оплата")]
     )
     message += f"Итого: {cart_sum/100}$"
-    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
 
     bot.send_message(
         text=message,
@@ -136,27 +141,30 @@ def cart(bot, update, moltin_api_key):
         reply_markup=telegram.InlineKeyboardMarkup(cart_keyboard),
     )
 
+    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
+
     return "CART"
 
 
-def add_to_cart(bot, update, moltin_api_key):
+def add_to_cart(bot, update, redis_db):
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
     query = update.callback_query
     user_id = query.from_user.id
 
     quantity, product_id = query["data"].split("|")
 
     put_in_cart(moltin_api_key, user_id, product_id, int(quantity))
-    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
 
     products_keyboard = build_products_menu_keyboard(moltin_api_key)
     message = "🐟Привет, я бот для продажи рыбы!🐟\nВыберете продукт"
 
     bot.send_message(user_id, text=message, reply_markup=products_keyboard)
-
+    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
     return "MAIN_MENU"
 
 
-def remove_from_cart(bot, update, moltin_api_key):
+def remove_from_cart(bot, update, redis_db):
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
     query = update.callback_query
     user_id = query.from_user.id
     cart_item_id = query["data"]
@@ -187,16 +195,15 @@ def remove_from_cart(bot, update, moltin_api_key):
         [telegram.InlineKeyboardButton("Оплата", callback_data="Оплата")]
     )
     message += f"Итого: {cart_sum / 100}$"
-    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
 
     bot.send_message(
         text=message,
         chat_id=user_id,
         reply_markup=telegram.InlineKeyboardMarkup(cart_keyboard),
     )
+    bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
 
-
-def registration_start(bot, update, moltin_api_key):
+def registration_start(bot, update, redis_db):
     query = update.callback_query
     user_id = query.from_user.id
 
@@ -205,7 +212,8 @@ def registration_start(bot, update, moltin_api_key):
     return "WAITING_EMAIL"
 
 
-def accept_email(bot, update, moltin_api_key, redis_db):
+def accept_email(bot, update, redis_db):
+    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
     email = update.message.text
     try:
         email = validate_email(email).email
@@ -259,7 +267,7 @@ def main():
                 "start",
                 partial(
                     start,
-                    moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                    redis_db=redis_db,
                 ),
             )
         ],
@@ -268,14 +276,14 @@ def main():
                 CallbackQueryHandler(
                     callback=partial(
                         cart,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     ),
                     pattern=r"Корзина",
                 ),
                 CallbackQueryHandler(
                     partial(
                         product,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     )
                 ),
             ],
@@ -283,21 +291,21 @@ def main():
                 CallbackQueryHandler(
                     callback=partial(
                         main_menu,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     ),
                     pattern=r"Назад",
                 ),
                 CallbackQueryHandler(
                     callback=partial(
                         cart,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     ),
                     pattern=r"Корзина",
                 ),
                 CallbackQueryHandler(
                     callback=partial(
                         add_to_cart,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     )
                 ),
             ],
@@ -305,21 +313,21 @@ def main():
                 CallbackQueryHandler(
                     callback=partial(
                         registration_start,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     ),
                     pattern=r"Оплата",
                 ),
                 CallbackQueryHandler(
                     callback=partial(
                         main_menu,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     ),
                     pattern=r"В меню",
                 ),
                 CallbackQueryHandler(
                     callback=partial(
                         remove_from_cart,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
+                        redis_db=redis_db,
                     )
                 ),
             ],
@@ -328,7 +336,6 @@ def main():
                     Filters.text,
                     partial(
                         accept_email,
-                        moltin_api_key=redis_db.get("MOLTIN_API_TOKEN").decode("utf-8"),
                         redis_db=redis_db,
                     ),
                 ),
