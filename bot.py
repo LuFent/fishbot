@@ -56,7 +56,7 @@ def build_product_keyboard(moltin_api_key, product_id):
 
 def start(bot, update, redis_db):
 
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
 
     products_keyboard = build_products_menu_keyboard(moltin_api_key)
     update.message.reply_text(
@@ -70,7 +70,7 @@ def start(bot, update, redis_db):
 
 
 def main_menu(bot, update, redis_db):
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
     query = update.callback_query
     user_id = query.from_user.id
 
@@ -86,7 +86,7 @@ def main_menu(bot, update, redis_db):
 
 
 def product(bot, update, redis_db):
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
     query = update.callback_query
     product_id = query["data"]
     user_id = query.from_user.id
@@ -100,10 +100,6 @@ def product(bot, update, redis_db):
             break
     else:
         product_quantity, product_price = 0, 0
-    message = (
-        f'🐟{product["name"]}\n\n💰{product["price"][0]["amount"]/100}$ per kg\n\n💵{product_quantity} kg'
-        f' in cart for {product_price/100} $ \n\n🤓{product["description"]}'
-    )
 
     message = f"""\
 🐟{product["name"]}
@@ -126,7 +122,7 @@ def product(bot, update, redis_db):
 
 
 def cart(bot, update, redis_db):
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
     query = update.callback_query
     user_id = query.from_user.id
     cart = get_cart_products(moltin_api_key, user_id)
@@ -171,7 +167,7 @@ in cart for {product["value"]["amount"]/100}$
 
 
 def add_to_cart(bot, update, redis_db):
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
     query = update.callback_query
     user_id = query.from_user.id
 
@@ -180,12 +176,11 @@ def add_to_cart(bot, update, redis_db):
     put_in_cart(moltin_api_key, user_id, product_id, int(quantity))
 
     products_keyboard = build_products_menu_keyboard(moltin_api_key)
-    message = (
-        """\
-    Привет, я бот для продажи рыбы!
-    Выберете продукт:
-            """,
-    )
+    message =  """\
+Привет, я бот для продажи рыбы!
+Выберете продукт:
+            """
+
 
     bot.send_message(user_id, text=message, reply_markup=products_keyboard)
     bot.delete_message(chat_id=user_id, message_id=query["message"].message_id)
@@ -193,7 +188,7 @@ def add_to_cart(bot, update, redis_db):
 
 
 def remove_from_cart(bot, update, redis_db):
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
     query = update.callback_query
     user_id = query.from_user.id
     cart_item_id = query["data"]
@@ -248,7 +243,7 @@ def registration_start(bot, update, redis_db):
 
 
 def accept_email(bot, update, redis_db):
-    moltin_api_key = redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+    moltin_api_key = get_or_update_token(redis_db)
     email = update.message.text
     try:
         email = validate_email(email).email
@@ -290,9 +285,10 @@ def main():
     REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
     REDIS_PORT = os.environ.get("REDIS_PORT", 6379)
     REDIS_DB_NUM = os.environ.get("REDIS_DB_NUM", 0)
+    MOLTIN_CLIENT_ID = os.environ.get("MOLTIN_CLIENT_ID")
 
     redis_db = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUM)
-
+    redis_db.set('MOLTIN_CLIENT_ID', MOLTIN_CLIENT_ID)
     updater = Updater(TG_API_TOKEN)
     dp = updater.dispatcher
 

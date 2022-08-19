@@ -1,5 +1,5 @@
 import requests
-import json
+from datetime import datetime, timedelta
 import os
 from pathlib import Path
 
@@ -155,3 +155,34 @@ def cart_checkout(api_key, cart_id, customer_id, first_name, last_name):
     url = f"https://api.moltin.com/v2/carts/{cart_id}/checkout"
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
+
+
+def set_token(redis_db):
+    moltin_client_id = redis_db.get('MOLTIN_CLIENT_ID')
+    data = {
+        "client_id": moltin_client_id,
+        "grant_type": "implicit",
+    }
+
+    response = requests.post(
+        "https://api.moltin.com/oauth/access_token", data=data
+    )
+    response.raise_for_status()
+    token = response.json()
+    expire_time = datetime.now() + timedelta(seconds=token['expires_in'] - 10)
+    expire_time = format(expire_time, '%d/%m/%y %H:%M:%S')
+    redis_db.set("MOLTIN_API_TOKEN", token["access_token"])
+    redis_db.set("MOLTIN_API_TOKEN_EXPIRE_TIME", expire_time)
+    return token["access_token"]
+
+def get_or_update_token(redis_db):
+    expire_time = redis_db.get("MOLTIN_API_TOKEN_EXPIRE_TIME").decode("utf-8")
+    expire_time = datetime.strptime(expire_time, '%d/%m/%y %H:%M:%S')
+
+    if expire_time <= datetime.now():
+        return set_token(redis_db)
+    else:
+        return redis_db.get("MOLTIN_API_TOKEN").decode("utf-8")
+
+
+
